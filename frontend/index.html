@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Simplex - Gestión de Solicitudes</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f4f4f4;
+    }
+    .container {
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+      background-color: #fff;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+    h1 {
+      text-align: center;
+      color: #333;
+    }
+    .options {
+      display: flex;
+      justify-content: space-around;
+      margin-bottom: 20px;
+    }
+    .options button {
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+      border: none;
+      border-radius: 5px;
+      background-color: #007bff;
+      color: #fff;
+    }
+    .options button:hover {
+      background-color: #0056b3;
+    }
+    .form-container {
+      display: none;
+    }
+    .form-container.active {
+      display: block;
+    }
+    form {
+      margin-bottom: 20px;
+    }
+    input, textarea, select, button {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 10px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+    button[type="submit"] {
+      background-color: #28a745;
+    }
+    button[type="submit"]:hover {
+      background-color: #218838;
+    }
+    .response {
+      margin-top: 20px;
+      padding: 10px;
+      background-color: #f8f9fa;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+    #forumSection {
+      margin-top: 20px;
+    }
+    #postList {
+      list-style-type: none;
+      padding: 0;
+    }
+    #postList li {
+      background-color: #f8f9fa;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      padding: 10px;
+      margin-bottom: 10px;
+    }
+    #postList li h4 {
+      margin: 0;
+      color: #007bff;
+    }
+    #postList li p {
+      margin: 5px 0;
+    }
+    #postList li small {
+      color: #666;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Simplex - Gestión de Solicitudes</h1>
+
+    <!-- Opciones -->
+    <div class="options">
+      <button onclick="showForm('academic')">Académicas</button>
+      <button onclick="showForm('administrative')">Administrativa y Financiera</button>
+      <button onclick="showForum()">Foro</button>
+    </div>
+
+    <!-- Formulario para solicitudes académicas -->
+    <div id="academicForm" class="form-container">
+      <h2>Solicitudes Académicas</h2>
+      <form id="academicRequestForm">
+        <select id="academicType">
+          <option value="horarios">Horarios</option>
+          <option value="cambio_grupo">Cambio de Grupo</option>
+          <option value="notas">Notas</option>
+          <option value="info_docente">Información del Docente</option>
+          <option value="programas_academicos">Programas Académicos</option>
+        </select>
+        <textarea id="academicDescription" placeholder="Descripción" required></textarea>
+        <button type="submit">Enviar Solicitud</button>
+      </form>
+    </div>
+
+    <!-- Formulario para solicitudes administrativas y financieras -->
+    <div id="administrativeForm" class="form-container">
+      <h2>Solicitudes Administrativas y Financieras</h2>
+      <form id="administrativeRequestForm">
+        <select id="administrativeType">
+          <option value="documentos">Solicitud de Documentos</option>
+          <option value="pagos">Solicitud de Pagos</option>
+          <option value="reserva_espacios">Reserva de Espacios</option>
+        </select>
+        <textarea id="administrativeDescription" placeholder="Descripción" required></textarea>
+        <button type="submit">Enviar Solicitud</button>
+      </form>
+    </div>
+
+    <!-- Sección del Foro -->
+    <div id="forumSection" class="form-container">
+      <h2>Foro de Comunicación</h2>
+
+      <!-- Formulario para crear una publicación -->
+      <form id="forumPostForm">
+        <input type="text" id="postTitle" placeholder="Título" required>
+        <textarea id="postContent" placeholder="Contenido" required></textarea>
+        <input type="text" id="postAuthor" placeholder="Autor" required>
+        <select id="postCategory">
+          <option value="academico">Académico</option>
+          <option value="administrativo">Administrativo</option>
+          <option value="financiero">Financiero</option>
+        </select>
+        <button type="submit">Publicar</button>
+      </form>
+
+      <!-- Lista de publicaciones -->
+      <div id="forumPosts">
+        <h3>Publicaciones Recientes</h3>
+        <ul id="postList"></ul>
+      </div>
+    </div>
+
+    <!-- Respuesta del servidor -->
+    <div id="response" class="response"></div>
+  </div>
+
+  <script>
+    // Mostrar el formulario correspondiente
+    function showForm(type) {
+      document.querySelectorAll('.form-container').forEach((form) => {
+        form.classList.remove('active');
+      });
+
+      if (type === 'academic') {
+        document.getElementById('academicForm').classList.add('active');
+      } else if (type === 'administrative') {
+        document.getElementById('administrativeForm').classList.add('active');
+      }
+    }
+
+    // Mostrar el foro
+    function showForum() {
+      document.querySelectorAll('.form-container').forEach((form) => {
+        form.classList.remove('active');
+      });
+      document.getElementById('forumSection').classList.add('active');
+      loadForumPosts();
+    }
+
+    // Cargar las publicaciones del foro
+    async function loadForumPosts() {
+      const response = await fetch('/api/forum');
+      const posts = await response.json();
+      const postList = document.getElementById('postList');
+
+      postList.innerHTML = '';
+      posts.forEach((post) => {
+        const li = document.createElement('li');
+        li.innerHTML = `
+          <h4>${post.title}</h4>
+          <p>${post.content}</p>
+          <small>Publicado por ${post.author} en ${new Date(post.createdAt).toLocaleString()}</small>
+          <ul>
+            ${post.replies.map((reply) => `
+              <li>
+                <p>${reply.content}</p>
+                <small>Respondido por ${reply.author} en ${new Date(reply.createdAt).toLocaleString()}</small>
+              </li>
+            `).join('')}
+          </ul>
+        `;
+        postList.appendChild(li);
+      });
+    }
+
+    // Manejar el envío del formulario académico
+    document.getElementById('academicRequestForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const type = document.getElementById('academicType').value;
+      const description = document.getElementById('academicDescription').value;
+
+      const response = await fetch('/api/requests', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ type, description, category: 'academic' }),
+      });
+
+      const data = await response.json();
+      document.getElementById('response').innerText = JSON.stringify(data, null, 2);
+    });
+
+    // Manejar el envío del formulario administrativo
+    document.getElementById('administrativeRequestForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const type = document.getElementById('administrativeType').value;
+      const description = document.getElementById('administrativeDescription').value;
+
+      const response = await fetch('/api/requests', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ type, description, category: 'administrative' }),
+      });
+
+      const data = await response.json();
+      document.getElementById('response').innerText = JSON.stringify(data, null, 2);
+    });
+
+    // Manejar el envío del formulario del foro
+    document.getElementById('forumPostForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const title = document.getElementById('postTitle').value;
+      const content = document.getElementById('postContent').value;
+      const author = document.getElementById('postAuthor').value;
+      const category = document.getElementById('postCategory').value;
+
+      const response = await fetch('/api/forum', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ title, content, author, category }),
+      });
+
+      const data = await response.json();
+      document.getElementById('response').innerText = JSON.stringify(data, null, 2);
+      loadForumPosts(); // Recargar las publicaciones
+    });
+  </script>
+</body>
+</html>
